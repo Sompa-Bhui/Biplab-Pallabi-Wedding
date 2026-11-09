@@ -1,0 +1,60 @@
+databases:
+  - name: wedding-rsvp-db
+    databaseName: wedding_rsvp
+    user: wedding_rsvp_app
+    plan: basic-256mb
+
+services:
+  - type: web
+    name: wedding-rsvp-api
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: python -m pip install -r requirements.txt
+    preDeployCommand: alembic upgrade head
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wedding-rsvp-db
+          property: connectionString
+      - key: CORS_ORIGINS
+        sync: false
+      - key: RSVP_RECIPIENT
+        value: bhuisompa001@gmail.com
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
+
+  - type: worker
+    name: wedding-rsvp-email-worker
+    runtime: python
+    rootDir: backend
+    plan: starter
+    buildCommand: python -m pip install -r requirements.txt
+    startCommand: python -m app.worker
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: wedding-rsvp-db
+          property: connectionString
+      - key: RSVP_RECIPIENT
+        value: bhuisompa001@gmail.com
+      - key: SMTP_HOST
+        value: smtp.gmail.com
+      - key: SMTP_PORT
+        value: "587"
+      - key: SMTP_USERNAME
+        sync: false
+      - key: SMTP_PASSWORD
+        sync: false
+      - key: MAIL_FROM
+        sync: false
